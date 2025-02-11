@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    environment {
+        MAVEN_HOME = tool 'Maven' // Ensure Maven is installed in Jenkins
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git 'https://github.com/your-repo.git'
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                sh 'mvn sonar:sonar'
+            }
+        }
+
+        stage('Docker Build & Push') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh 'docker build -t your-dockerhub-username/java-web-app .'
+                sh 'docker push your-dockerhub-username/java-web-app'
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                sh 'scp target/*.war user@server:/path/to/tomcat/webapps/'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Build and deployment successful!"
+        }
+        failure {
+            echo "Build failed. Check logs for details."
+        }
+    }
+}
